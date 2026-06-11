@@ -34,7 +34,12 @@ export default function PlayPage() {
     !s ? null
     : s.status === "correct" ? <span className="ok">✓ +฿{s.moneyAwarded}</span>
     : s.status === "incorrect" ? <span className="bad">✗ locked</span>
-    : s.status === "pending_ai" ? <span className="pend">🤖 AI checking…</span>
+    : s.status === "pending_ai" ? (
+        <span className="pend">
+          🤖 AI checking
+          <span className="blink-dots"><span>.</span><span>.</span><span>.</span></span>
+        </span>
+      )
     : <span className="pend">⏳ waiting for judge</span>;
 
   return (
