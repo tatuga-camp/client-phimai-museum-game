@@ -78,8 +78,8 @@ function SortableRow({
           src={item.imageUrl}
           alt=""
           style={{
-            width: 48,
-            height: 48,
+            width: 80,
+            height: 80,
             objectFit: "cover",
             borderRadius: 8,
           }}
