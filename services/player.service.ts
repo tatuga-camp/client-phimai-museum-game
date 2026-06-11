@@ -38,3 +38,10 @@ export async function submitAnswer(input: SubmitAnswerInput): Promise<SubmitResu
 
 export const submitPhoto = (form: FormData) =>
   postForm<SubmitResult>("/api/submissions/photo", form, authHeaders());
+
+export type RevealHintResult = { hintTh: string; cost: number };
+export const revealHint = (taskId: string) =>
+  api<RevealHintResult>("/api/hints", {
+    method: "POST",
+    body: JSON.stringify({ taskId }),
+  });

@@ -13,7 +13,9 @@ export type Task = {
   roomNumber: number;
   type: TaskType;
   titleEn: string;
-  hintTh: string;
+  hintTh: string | null;   // null until the team reveals the hint
+  hintCost: number;        // money it costs to reveal
+  hintRevealed: boolean;
   moneyValue: number;
   content: Record<string, unknown>;
 };

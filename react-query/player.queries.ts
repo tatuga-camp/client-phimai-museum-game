@@ -8,8 +8,10 @@ import {
   join,
   submitAnswer,
   submitPhoto,
+  revealHint,
   type JoinInput,
   type SubmitAnswerInput,
+  type RevealHintResult,
 } from "@/services/player.service";
 import type { Me, GameState, JoinResponse, SubmitResult } from "@/types";
 
@@ -38,3 +40,14 @@ export const useSubmitAnswer = () => {
 
 export const useSubmitPhoto = () =>
   useMutation<SubmitResult, ApiError, FormData>({ mutationFn: submitPhoto });
+
+export const useRevealHint = () => {
+  const qc = useQueryClient();
+  return useMutation<RevealHintResult, ApiError, string>({
+    mutationFn: revealHint,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.me });
+      qc.invalidateQueries({ queryKey: qk.gameState });
+    },
+  });
+};
