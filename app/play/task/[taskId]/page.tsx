@@ -2,7 +2,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { newSubmissionId, ApiError } from "@/services/http";
-import { useMe, useSubmitAnswer } from "@/react-query/player.queries";
+import { useMe, useSubmitAnswer, useRevealHint } from "@/react-query/player.queries";
 import type { SubmitResult } from "@/types";
 import McTask from "@/components/tasks/McTask";
 import ReorderTask from "@/components/tasks/ReorderTask";
@@ -19,6 +19,9 @@ export default function TaskPage({
   const router = useRouter();
   const { data: me, error } = useMe();
   const submitMut = useSubmitAnswer();
+  const revealMut = useRevealHint();
+  const [revealedHint, setRevealedHint] = useState<string | null>(null);
+  const [hintError, setHintError] = useState("");
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [submitError, setSubmitError] = useState("");
 
@@ -29,6 +32,24 @@ export default function TaskPage({
   const task = me?.tasks.find((t) => t.id === taskId) ?? null;
   const prior = me?.mySubmissions.find((s) => s.taskId === taskId) ?? null;
   const shown = result ?? prior;
+
+  async function revealHint() {
+    if (!task) return;
+    if (!confirm(`Spend ฿${task.hintCost} of your team's money to see the hint?`))
+      return;
+    setHintError("");
+    try {
+      const r = await revealMut.mutateAsync(task.id);
+      setRevealedHint(r.hintTh);
+    } catch (e) {
+      const status = (e as ApiError).status;
+      if (status === 402) {
+        setHintError("Not enough team money for this hint / เงินทีมไม่พอ");
+      } else {
+        setHintError("Connection problem — try again / ลองอีกครั้ง");
+      }
+    }
+  }
 
   // submit once with a stable idempotency key (retry/idempotency handled in the service)
   async function submit(payload: Record<string, unknown>) {
@@ -111,7 +132,20 @@ export default function TaskPage({
       </div>
       <div className="card" style={{ marginTop: 12 }}>
         <h2>{task.titleEn}</h2>
-        <p className="hint">{task.hintTh}</p>
+        {task.hintRevealed || revealedHint ? (
+          <p className="hint">{revealedHint ?? task.hintTh}</p>
+        ) : (
+          <>
+            <button
+              className="btn"
+              disabled={revealMut.isPending}
+              onClick={revealHint}
+            >
+              💡 Reveal hint — ฿{task.hintCost}
+            </button>
+            {hintError && <p className="bad center">{hintError}</p>}
+          </>
+        )}
       </div>
       {task.type === "mc" && <McTask {...common} />}
       {task.type === "reorder" && <ReorderTask {...common} />}
