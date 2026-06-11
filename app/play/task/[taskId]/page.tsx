@@ -143,6 +143,9 @@ export default function TaskPage({
             >
               💡 Reveal hint — ฿{task.hintCost}
             </button>
+            <p className="hint center">
+              เปิดคำใบ้ — ใช้เงินทีม ฿{task.hintCost}
+            </p>
             {hintError && <p className="bad center">{hintError}</p>}
           </>
         )}
