@@ -14,7 +14,7 @@ function hasBlankItems(t: Partial<AdminTask>): boolean {
   if (t.type !== "reorder" && t.type !== "swap") return false;
   const items =
     (t.content as { items?: { label: string; imageUrl?: string }[] })?.items ?? [];
-  return items.some((i) => !i.label.trim() && !i.imageUrl);
+  return items.some((i) => !(i.label ?? "").trim() && !i.imageUrl);
 }
 
 export default function TasksTab() {
@@ -133,6 +133,10 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
   const isSwap = task.type === "swap";
   const content = task.content as { items: { id: string; label: string; imageUrl?: string }[]; slotLabels?: string[] };
   const items = content.items;
+  // pickImage commits after an await; read items via ref so mid-upload label
+  // edits or deletions aren't clobbered by a stale render snapshot.
+  const itemsRef = useRef(items);
+  itemsRef.current = items; // eslint-disable-line react-hooks/refs
 
   const commit = (newItems: typeof items, slotLabels?: string[]) => {
     const correct = newItems.map((x) => x.id);
@@ -151,7 +155,9 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
     setUploadingId(id);
     try {
       const url = await upload.mutateAsync(file);
-      commit(items.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)));
+      const current = itemsRef.current;
+      if (!current.some((x) => x.id === id)) return; // item deleted mid-upload
+      commit(current.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)));
     } catch {
       setFailedId(id);
     } finally {
