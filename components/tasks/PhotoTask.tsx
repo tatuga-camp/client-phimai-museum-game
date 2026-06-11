@@ -9,6 +9,8 @@ import AiScanOverlay from "@/components/AiScanOverlay";
 
 /** Server-side upload limit (photo.service.ts) — compression fallback bound. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+/** Types the server accepts (photo.service.ts) — fallback must match. */
+const UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 type Props = {
   task: Task;
@@ -52,11 +54,11 @@ export default function PhotoTask({ task, onResult }: Props) {
       setFile(new File([compressed], "photo.jpg", { type: "image/jpeg" }));
     } catch {
       if (gen !== pickGen.current) return;
-      if (f.size <= MAX_UPLOAD_BYTES) {
-        setFile(f); // original is small enough — send it as-is
+      if (f.size <= MAX_UPLOAD_BYTES && UPLOAD_TYPES.includes(f.type)) {
+        setFile(f); // original is acceptable — send it as-is
       } else {
         swapPreview("");
-        setError("Photo too large — please retake / รูปใหญ่เกินไป ถ่ายใหม่");
+        setError("Photo can't be used — please retake / ใช้รูปนี้ไม่ได้ ถ่ายใหม่");
       }
     } finally {
       if (gen === pickGen.current) setCompressing(false);
@@ -103,6 +105,7 @@ export default function PhotoTask({ task, onResult }: Props) {
           type="file"
           accept="image/*"
           capture="environment"
+          disabled={submitPhoto.isPending}
           onChange={pick}
           style={{ display: "none" }}
         />

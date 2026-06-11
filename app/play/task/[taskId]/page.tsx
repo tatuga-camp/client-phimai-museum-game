@@ -1,6 +1,7 @@
 "use client";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useIsMutating } from "@tanstack/react-query";
 import { newSubmissionId, ApiError } from "@/services/http";
 import {
   useMe,
@@ -49,7 +50,10 @@ export default function TaskPage({
     prior && prior.status !== "pending_ai" && prior.status !== "needs_manual"
       ? prior
       : null;
-  const shown = settled ?? result ?? prior;
+  // While our photo upload is in flight the server already shows a pending_ai
+  // claim — don't let a poll unmount the form (and its scanner/error UI).
+  const photoBusy = useIsMutating({ mutationKey: ["submit-photo"] }) > 0;
+  const shown = photoBusy ? result : (settled ?? result ?? prior);
 
   // Spending shared team money is destructive, so it's gated behind an in-app
   // confirmation (a themed two-button step, not a native confirm() — those get

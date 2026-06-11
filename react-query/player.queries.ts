@@ -39,7 +39,10 @@ export const useSubmitAnswer = () => {
 };
 
 export const useSubmitPhoto = () =>
-  useMutation<SubmitResult, ApiError, FormData>({ mutationFn: submitPhoto });
+  useMutation<SubmitResult, ApiError, FormData>({
+    mutationKey: ["submit-photo"],
+    mutationFn: submitPhoto,
+  });
 
 export const useRevealHint = () => {
   const qc = useQueryClient();

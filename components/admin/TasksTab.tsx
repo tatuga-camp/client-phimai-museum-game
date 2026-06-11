@@ -60,10 +60,13 @@ export default function TasksTab() {
 
 function TaskEditor({ task, setTask, onSave }: {
   task: Partial<AdminTask>;
-  setTask: (t: Partial<AdminTask>) => void;
+  setTask: React.Dispatch<React.SetStateAction<Partial<AdminTask> | null>>;
   onSave: () => void;
 }) {
-  const set = (patch: Partial<AdminTask>) => setTask({ ...task, ...patch });
+  // Functional update: async upload commits merge into the LATEST state, and
+  // a patch landing after the editor closed is dropped instead of reopening it.
+  const set = (patch: Partial<AdminTask>) =>
+    setTask((prev) => (prev ? { ...prev, ...patch } : prev));
   const setType = (type: AdminTask["type"]) => {
     const fresh: Record<AdminTask["type"], { content: unknown; answerKey: unknown }> = {
       mc: { content: { type: "mc", options: [] }, answerKey: { type: "mc", correctOptionIds: [] } },
