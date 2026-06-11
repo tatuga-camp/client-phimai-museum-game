@@ -47,6 +47,7 @@ export default function TaskPage({
     try {
       const r = await revealMut.mutateAsync(task.id);
       setRevealedHint(r.hintTh);
+      setConfirming(false); // success closes the popup; errors keep it open
     } catch (e) {
       const status = (e as ApiError).status;
       if (status === 402) {
@@ -54,9 +55,12 @@ export default function TaskPage({
       } else {
         setHintError("Connection problem — try again / ลองอีกครั้ง");
       }
-    } finally {
-      setConfirming(false);
     }
+  }
+
+  function openConfirm() {
+    setHintError(""); // drop any stale error from a previous attempt
+    setConfirming(true);
   }
 
   // submit once with a stable idempotency key (retry/idempotency handled in the service)
@@ -143,13 +147,38 @@ export default function TaskPage({
         <h2>{task.titleEn}</h2>
         {task.hintRevealed || revealedHint ? (
           <p className="hint">{revealedHint ?? task.hintTh}</p>
-        ) : confirming ? (
-          <div className="flex flex-col gap-2 mt-4">
+        ) : (
+          <div className="flex flex-col gap-4 mt-4">
+            <button className="btn" onClick={openConfirm}>
+              💡 Reveal hint — ฿{task.hintCost}
+            </button>
             <p className="hint center">
-              Spend ฿{task.hintCost} of your team&apos;s money to reveal this
-              hint?
+              เปิดคำใบ้ — ใช้เงินทีม ฿{task.hintCost}
+            </p>
+          </div>
+        )}
+      </div>
+      {task.type === "mc" && <McTask {...common} />}
+      {task.type === "reorder" && <ReorderTask {...common} />}
+      {task.type === "swap" && <SwapTask {...common} />}
+      {task.type === "circle" && <CircleTask {...common} />}
+      {task.type === "photo" && <PhotoTask task={task} onResult={setResult} />}
+      {submitError && <p className="bad center">{submitError}</p>}
+
+      {confirming && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !revealMut.isPending && setConfirming(false)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 44 }} className="center">
+              💡
+            </div>
+            <h2 className="center">Reveal the hint?</h2>
+            <p className="hint center">
+              This spends ฿{task.hintCost} of your team&apos;s money.
               <br />
-              ใช้เงินทีม ฿{task.hintCost} เพื่อเปิดคำใบ้?
+              ใช้เงินทีม ฿{task.hintCost} เพื่อเปิดคำใบ้
             </p>
             <button
               className="btn"
@@ -165,25 +194,10 @@ export default function TaskPage({
             >
               Cancel / ยกเลิก
             </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 mt-4">
-            <button className="btn" onClick={() => setConfirming(true)}>
-              💡 Reveal hint — ฿{task.hintCost}
-            </button>
-            <p className="hint center">
-              เปิดคำใบ้ — ใช้เงินทีม ฿{task.hintCost}
-            </p>
             {hintError && <p className="bad center">{hintError}</p>}
           </div>
-        )}
-      </div>
-      {task.type === "mc" && <McTask {...common} />}
-      {task.type === "reorder" && <ReorderTask {...common} />}
-      {task.type === "swap" && <SwapTask {...common} />}
-      {task.type === "circle" && <CircleTask {...common} />}
-      {task.type === "photo" && <PhotoTask task={task} onResult={setResult} />}
-      {submitError && <p className="bad center">{submitError}</p>}
+        </div>
+      )}
     </main>
   );
 }

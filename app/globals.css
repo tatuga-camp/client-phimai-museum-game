@@ -103,6 +103,15 @@
     @apply placeholder:font-bold placeholder:text-wolf focus:border-sky focus:outline-none;
   }
 
+  /* Centered confirmation popup over a dimmed backdrop. */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background: color-mix(in srgb, var(--color-eel) 55%, transparent);
+  }
+  .modal {
+    @apply flex w-full max-w-[360px] flex-col gap-3 rounded-2xl border-2 border-swan bg-snow p-5 shadow-xl;
+  }
+
   /* Helper / bilingual hint text. */
   .hint {
     @apply text-sm font-bold text-wolf;
