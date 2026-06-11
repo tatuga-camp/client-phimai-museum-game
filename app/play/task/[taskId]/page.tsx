@@ -13,6 +13,7 @@ import ReorderTask from "@/components/tasks/ReorderTask";
 import SwapTask from "@/components/tasks/SwapTask";
 import CircleTask from "@/components/tasks/CircleTask";
 import PhotoTask from "@/components/tasks/PhotoTask";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function TaskPage({
   params,
@@ -165,39 +166,23 @@ export default function TaskPage({
       {task.type === "photo" && <PhotoTask task={task} onResult={setResult} />}
       {submitError && <p className="bad center">{submitError}</p>}
 
-      {confirming && (
-        <div
-          className="modal-backdrop"
-          onClick={() => !revealMut.isPending && setConfirming(false)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 44 }} className="center">
-              💡
-            </div>
-            <h2 className="center">Reveal the hint?</h2>
-            <p className="hint center">
-              This spends ฿{task.hintCost} of your team&apos;s money.
-              <br />
-              ใช้เงินทีม ฿{task.hintCost} เพื่อเปิดคำใบ้
-            </p>
-            <button
-              className="btn"
-              disabled={revealMut.isPending}
-              onClick={revealHint}
-            >
-              ✅ Yes, reveal — ฿{task.hintCost}
-            </button>
-            <button
-              className="btn btn-ghost"
-              disabled={revealMut.isPending}
-              onClick={() => setConfirming(false)}
-            >
-              Cancel / ยกเลิก
-            </button>
-            {hintError && <p className="bad center">{hintError}</p>}
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={confirming}
+        icon="💡"
+        title="Reveal the hint?"
+        message={
+          <>
+            This spends ฿{task.hintCost} of your team&apos;s money.
+            <br />
+            ใช้เงินทีม ฿{task.hintCost} เพื่อเปิดคำใบ้
+          </>
+        }
+        confirmLabel={`✅ Yes, reveal — ฿${task.hintCost}`}
+        busy={revealMut.isPending}
+        error={hintError}
+        onConfirm={revealHint}
+        onCancel={() => setConfirming(false)}
+      />
     </main>
   );
 }

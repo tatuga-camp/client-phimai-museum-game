@@ -1,6 +1,8 @@
 "use client";
 import { useRef, useState } from "react";
 import type { Task } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
+import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
 
 type Props = {
   task: Task;
@@ -13,6 +15,14 @@ export default function CircleTask({ task, submit }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null); // normalized 0..1
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  async function doSubmit() {
+    setBusy(true);
+    await submit({ type: "circle", ...point });
+    setBusy(false);
+    setConfirming(false);
+  }
 
   const tap = (e: React.MouseEvent<HTMLImageElement>) => {
     const rect = imgRef.current!.getBoundingClientRect();
@@ -62,14 +72,17 @@ export default function CircleTask({ task, submit }: Props) {
         className="btn"
         style={{ marginTop: 12 }}
         disabled={busy || !point}
-        onClick={async () => {
-          setBusy(true);
-          await submit({ type: "circle", ...point });
-          setBusy(false);
-        }}
+        onClick={() => setConfirming(true)}
       >
         Submit — one chance only! ⚠️
       </button>
+      <ConfirmModal
+        open={confirming}
+        {...SUBMIT_CONFIRM}
+        busy={busy}
+        onConfirm={doSubmit}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

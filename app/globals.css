@@ -30,8 +30,13 @@
     @apply bg-polar text-eel;
     /* Nunito for Latin; device rounded fonts cover the Thai bilingual text. */
     font-family:
-      var(--font-nunito), "Leelawadee UI", "Sukhumvit Set", "Noto Sans Thai",
-      system-ui, -apple-system, sans-serif;
+      var(--font-nunito),
+      "Leelawadee UI",
+      "Sukhumvit Set",
+      "Noto Sans Thai",
+      system-ui,
+      -apple-system,
+      sans-serif;
     font-weight: 700;
     font-feature-settings: "ss01";
   }
@@ -103,9 +108,16 @@
     @apply placeholder:font-bold placeholder:text-wolf focus:border-sky focus:outline-none;
   }
 
-  /* Centered confirmation popup over a dimmed backdrop. */
+  /* Centered confirmation popup over a dimmed backdrop. Plain properties (not
+     @apply) so a CSS formatter can't strip the positioning utilities. */
   .modal-backdrop {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
     background: color-mix(in srgb, var(--color-eel) 55%, transparent);
   }
   .modal {

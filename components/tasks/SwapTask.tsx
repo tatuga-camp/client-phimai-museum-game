@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { Task } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
+import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
 
 type Item = { id: string; label: string; imageUrl?: string };
 type Props = {
@@ -14,6 +16,14 @@ export default function SwapTask({ task, submit }: Props) {
   const [arrangement, setArrangement] = useState<Item[]>(content.items);
   const [picked, setPicked] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  async function doSubmit() {
+    setBusy(true);
+    await submit({ type: "swap", arrangement: arrangement.map((x) => x.id) });
+    setBusy(false);
+    setConfirming(false);
+  }
 
   const tap = (i: number) => {
     if (picked === null) return setPicked(i);
@@ -68,17 +78,17 @@ export default function SwapTask({ task, submit }: Props) {
       <button
         className="btn"
         disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          await submit({
-            type: "swap",
-            arrangement: arrangement.map((x) => x.id),
-          });
-          setBusy(false);
-        }}
+        onClick={() => setConfirming(true)}
       >
         Submit — one chance only! ⚠️
       </button>
+      <ConfirmModal
+        open={confirming}
+        {...SUBMIT_CONFIRM}
+        busy={busy}
+        onConfirm={doSubmit}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

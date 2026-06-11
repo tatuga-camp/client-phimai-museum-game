@@ -4,6 +4,7 @@ import imageCompression from "browser-image-compression";
 import { newSubmissionId, ApiError } from "@/services/http";
 import { useSubmitPhoto } from "@/react-query/player.queries";
 import type { Task, SubmitResult } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 type Props = { task: Task; onResult: (r: SubmitResult) => void };
 
@@ -12,6 +13,7 @@ export default function PhotoTask({ task, onResult }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const submitPhoto = useSubmitPhoto();
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -75,18 +77,31 @@ export default function PhotoTask({ task, onResult }: Props) {
           style={{ width: "100%", borderRadius: 12, marginTop: 12 }}
         />
       )}
-      {error && <p className="bad center">{error}</p>}
       <button
         className="btn"
         style={{ marginTop: 12 }}
         disabled={submitPhoto.isPending || !file}
-        onClick={upload}
+        onClick={() => {
+          setError("");
+          setConfirming(true);
+        }}
       >
         {submitPhoto.isPending ? "Uploading… 📤" : "Submit to the AI judge! 🤖"}
       </button>
       <p className="hint center">
         Each player can submit their own photo once / คนละ 1 รูป
       </p>
+      <ConfirmModal
+        open={confirming}
+        icon="🤖"
+        title="Send to the AI judge?"
+        message="Each player can submit one photo. / ส่งรูปได้คนละ 1 รูป"
+        confirmLabel="🤖 Submit photo"
+        busy={submitPhoto.isPending}
+        error={error}
+        onConfirm={upload}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

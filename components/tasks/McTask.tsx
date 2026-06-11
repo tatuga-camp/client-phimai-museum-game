@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { Task } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
+import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
 
 type Props = {
   task: Task;
@@ -13,6 +15,7 @@ export default function McTask({ task, submit }: Props) {
     .options;
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const toggle = (id: string) =>
     setSel((s) => {
@@ -21,6 +24,13 @@ export default function McTask({ task, submit }: Props) {
       else n.add(id);
       return n;
     });
+
+  async function doSubmit() {
+    setBusy(true);
+    await submit({ type: "mc", selectedOptionIds: [...sel] });
+    setBusy(false);
+    setConfirming(false);
+  }
 
   return (
     <div>
@@ -38,15 +48,18 @@ export default function McTask({ task, submit }: Props) {
       <button
         className="btn"
         disabled={busy || sel.size === 0}
-        onClick={async () => {
-          setBusy(true);
-          await submit({ type: "mc", selectedOptionIds: [...sel] });
-          setBusy(false);
-        }}
+        onClick={() => setConfirming(true)}
       >
         Submit — one chance only! ⚠️
       </button>
       <p className="hint center">ส่งได้ครั้งเดียวเท่านั้น</p>
+      <ConfirmModal
+        open={confirming}
+        {...SUBMIT_CONFIRM}
+        busy={busy}
+        onConfirm={doSubmit}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }
