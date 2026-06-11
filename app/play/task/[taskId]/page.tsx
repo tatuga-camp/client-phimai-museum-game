@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { newSubmissionId, ApiError } from "@/services/http";
 import {
   useMe,
+  useGameState,
   useSubmitAnswer,
   useRevealHint,
 } from "@/react-query/player.queries";
@@ -24,6 +25,7 @@ export default function TaskPage({
   const { taskId } = use(params);
   const router = useRouter();
   const { data: me, error } = useMe();
+  const { data: state } = useGameState();
   const submitMut = useSubmitAnswer();
   const revealMut = useRevealHint();
   const [revealedHint, setRevealedHint] = useState<string | null>(null);
@@ -38,8 +40,16 @@ export default function TaskPage({
   }, [error, router]);
 
   const task = me?.tasks.find((t) => t.id === taskId) ?? null;
-  const prior = me?.mySubmissions.find((s) => s.taskId === taskId) ?? null;
-  const shown = result ?? prior;
+  const prior =
+    (state?.mySubmissions ?? me?.mySubmissions)?.find((s) => s.taskId === taskId) ??
+    null;
+  // A polled final verdict beats a stale pending mutation response, so the
+  // scanner screen flips to the result as soon as the AI judge finishes.
+  const settled =
+    prior && prior.status !== "pending_ai" && prior.status !== "needs_manual"
+      ? prior
+      : null;
+  const shown = settled ?? result ?? prior;
 
   // Spending shared team money is destructive, so it's gated behind an in-app
   // confirmation (a themed two-button step, not a native confirm() — those get
