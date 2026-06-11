@@ -1,38 +1,149 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Duolingo-style design system
+   Flat, high-contrast, gamified. Tactile 3D buttons (solid top + darker
+   bottom edge that depresses on press). Heavy rounded corners. No gradients,
+   no blurs. Bold rounded type.
+--------------------------------------------------------------------------- */
+
 @theme {
-  --color-ink: #1A312C;
-  --color-teal: #428475;
-  --color-mint: #89D7B7;
-  --color-cream: #FFF4E1;
+  --color-grass: #58cc02; /* primary actions */
+  --color-grass-dark: #58a700; /* green button bottom edge */
+  --color-sky: #1cb0f6; /* informational highlights */
+  --color-sky-dark: #1899d6; /* blue button bottom edge */
+  --color-sky-soft: #ddf4ff; /* selected option fill */
+  --color-cardinal: #ff4b4b; /* errors / health */
+  --color-cardinal-dark: #ea2b2b;
+  --color-fox: #ff9600; /* in-progress / pending */
+  --color-bee: #ffc800; /* coins / reward accent */
+  --color-eel: #3c3c3c; /* primary text */
+  --color-wolf: #777777; /* secondary text */
+  --color-swan: #e5e5e5; /* neutral borders */
+  --color-swan-dark: #d0d0d0; /* neutral button bottom edge */
+  --color-polar: #f7f7f7; /* page background */
+  --color-snow: #ffffff; /* surfaces */
 }
 
 @layer base {
-  body { @apply bg-cream text-ink; font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; }
-  h1 { @apply text-[22px] font-bold; }
-  h2 { @apply text-lg font-bold; }
+  body {
+    @apply bg-polar text-eel;
+    /* Nunito for Latin; device rounded fonts cover the Thai bilingual text. */
+    font-family:
+      var(--font-nunito), "Leelawadee UI", "Sukhumvit Set", "Noto Sans Thai",
+      system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    font-feature-settings: "ss01";
+  }
+  h1 {
+    @apply text-2xl font-extrabold tracking-tight leading-tight;
+  }
+  h2 {
+    @apply text-lg font-extrabold tracking-tight;
+  }
+  /* Inputs inherit the rounded face instead of the browser default. */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
 }
 
 @layer components {
-  .page { @apply max-w-[480px] mx-auto p-4 min-h-dvh; }
-  .card { @apply bg-white border-2 border-mint rounded-2xl p-3.5 mb-3; }
-  .bar { @apply bg-ink text-cream rounded-[14px] px-3.5 py-2.5 font-bold flex justify-between sticky top-2 z-10; }
-  .btn { @apply block w-full bg-teal text-cream rounded-[14px] p-3 text-[17px] font-bold cursor-pointer text-center disabled:opacity-50; }
-  .btn-ink { @apply bg-ink; }
-  .chip { @apply block w-full text-left bg-white border-2 border-teal rounded-xl p-[11px] mb-2 text-base cursor-pointer text-ink; }
-  .chip.sel { @apply bg-mint border-ink font-bold; }
-  .input { @apply w-full border-2 border-teal rounded-xl p-3 text-lg bg-white text-ink; }
-  .hint { @apply text-teal text-[13px]; }
-  .center { @apply text-center; }
-  .ok { @apply text-[#1a7e3a] font-bold; }
-  .bad { @apply text-[#b03030] font-bold; }
-  .pend { @apply text-[#b07c20] font-bold; }
-  .admin { @apply max-w-[1100px] mx-auto p-5; }
-  .tabs { @apply flex gap-1 mb-4; }
-  .tab { @apply bg-teal text-cream rounded-t-[10px] px-[18px] py-[9px] cursor-pointer font-bold; }
-  .tab.active { @apply bg-ink; }
-  .row { @apply flex gap-3.5 flex-wrap; }
-  .panel { @apply bg-white border-2 border-mint rounded-xl p-3.5 flex-1 min-w-[320px]; }
-  table.t { @apply w-full border-collapse; }
-  table.t td, table.t th { @apply px-2 py-1.5 border-b border-mint text-left text-sm; }
+  /* Centered, distraction-free phone column. */
+  .page {
+    @apply mx-auto flex w-full max-w-[480px] flex-col gap-3 px-4 py-5;
+    min-height: 100dvh;
+  }
+
+  /* Surfaces: white, thick neutral border, heavy radius. */
+  .card {
+    @apply mb-0 rounded-2xl border-2 border-swan bg-snow p-4;
+  }
+
+  /* Sticky status bar — reads like a HUD. */
+  .bar {
+    @apply sticky top-2 z-10 flex items-center justify-between rounded-2xl border-2 border-swan bg-snow px-4 py-3 text-lg font-extrabold;
+  }
+
+  /* --- Tactile 3D buttons -------------------------------------------------
+     Solid fill + a 4px darker bottom edge. On press the button drops 4px and
+     loses the edge, so it reads as physically depressed. */
+  .btn {
+    @apply block w-full cursor-pointer select-none rounded-2xl border-b-4 px-4 py-3 text-center text-base font-extrabold uppercase tracking-wide;
+    @apply border-grass-dark bg-grass text-white;
+    @apply transition-[filter] duration-100 hover:brightness-105;
+    @apply active:translate-y-[4px] active:border-b-0;
+    @apply disabled:cursor-not-allowed disabled:border-b-4 disabled:opacity-40 disabled:brightness-100 disabled:active:translate-y-0;
+  }
+  /* Blue informational action (e.g. "Take photo"). */
+  .btn-ink {
+    @apply border-sky-dark bg-sky text-white;
+  }
+
+  /* Selectable rows / tappable list items — lightly tactile. */
+  .chip {
+    @apply mb-2.5 block w-full cursor-pointer select-none rounded-2xl border-2 border-b-4 border-swan bg-snow p-3 text-left text-base font-bold text-eel;
+    @apply transition-[filter] duration-100 hover:brightness-[0.99];
+    @apply active:translate-y-[2px] active:border-b-2;
+  }
+  .chip.sel {
+    @apply border-sky bg-sky-soft text-sky-dark;
+  }
+
+  /* Form fields. */
+  .input {
+    @apply w-full rounded-2xl border-2 border-swan bg-snow px-4 py-3 text-base font-bold text-eel;
+    @apply placeholder:font-bold placeholder:text-wolf focus:border-sky focus:outline-none;
+  }
+
+  /* Helper / bilingual hint text. */
+  .hint {
+    @apply text-sm font-bold text-wolf;
+  }
+  .center {
+    @apply text-center;
+  }
+
+  /* Status accents. */
+  .ok {
+    @apply font-extrabold text-grass;
+  }
+  .bad {
+    @apply font-extrabold text-cardinal;
+  }
+  .pend {
+    @apply font-extrabold text-fox;
+  }
+
+  /* --- Admin dashboard --------------------------------------------------- */
+  .admin {
+    @apply mx-auto max-w-[1100px] p-6;
+  }
+  .tabs {
+    @apply mb-5 flex flex-wrap gap-2;
+  }
+  /* Tabs double as small action buttons across the admin UI — same tactile feel. */
+  .tab {
+    @apply cursor-pointer select-none rounded-xl border-2 border-b-4 border-swan bg-snow px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-eel;
+    @apply transition-[filter] duration-100 hover:brightness-[0.98];
+    @apply active:translate-y-[2px] active:border-b-2 disabled:opacity-40;
+  }
+  .tab.active {
+    @apply border-grass-dark bg-grass text-white;
+  }
+  .row {
+    @apply flex flex-wrap gap-4;
+  }
+  .panel {
+    @apply min-w-[320px] flex-1 rounded-2xl border-2 border-swan bg-snow p-4;
+  }
+  table.t {
+    @apply w-full border-collapse;
+  }
+  table.t td,
+  table.t th {
+    @apply border-b-2 border-swan px-2 py-2 text-left text-sm font-bold;
+  }
 }

@@ -36,8 +36,10 @@ export default function PhotoTask({ task, onResult }: Props) {
       onResult(await submitPhoto.mutateAsync(form)); // → pending_ai; /play polling reveals the score
     } catch (e) {
       const status = (e as ApiError).status;
-      if (status === 409) setError("You already submitted a photo! / ส่งรูปไปแล้ว");
-      else if (status) setError("Upload failed — try again / อัปโหลดไม่สำเร็จ ลองใหม่");
+      if (status === 409)
+        setError("You already submitted a photo! / ส่งรูปไปแล้ว");
+      else if (status)
+        setError("Upload failed — try again / อัปโหลดไม่สำเร็จ ลองใหม่");
       else setError("Connection problem — try again / ลองอีกครั้ง");
     }
   }
@@ -52,7 +54,7 @@ export default function PhotoTask({ task, onResult }: Props) {
         style={{
           width: "100%",
           borderRadius: 12,
-          border: "2px solid var(--color-mint)",
+          border: "2px solid var(--color-grass)",
         }}
       />
       <label className="btn btn-ink" style={{ marginTop: 12 }}>

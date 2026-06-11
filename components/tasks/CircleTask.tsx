@@ -37,7 +37,7 @@ export default function CircleTask({ task, submit }: Props) {
           style={{
             width: "100%",
             borderRadius: 12,
-            border: "2px solid var(--color-mint)",
+            border: "2px solid var(--color-grass)",
             touchAction: "manipulation",
           }}
         />
@@ -50,10 +50,10 @@ export default function CircleTask({ task, submit }: Props) {
               transform: "translate(-50%, -50%)",
               width: 44,
               height: 44,
-              border: "4px solid var(--color-teal)",
+              border: "4px solid var(--color-sky)",
               borderRadius: "50%",
               pointerEvents: "none",
-              background: "rgba(137, 215, 183, 0.3)",
+              background: "rgba(28, 176, 246, 0.25)",
             }}
           />
         )}
