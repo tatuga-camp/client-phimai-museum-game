@@ -173,3 +173,64 @@
     @apply border-b-2 border-swan px-2 py-2 text-left text-sm font-bold;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   AI scan overlay — photo-task loading states. Solid colors only (the design
+   system bans gradients); the scan line glows via box-shadow instead.
+--------------------------------------------------------------------------- */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-eel) 45%, transparent);
+}
+.scan-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--color-sky);
+}
+.scan-corner.tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+.scan-corner.tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-radius: 0 6px 0 0; }
+.scan-corner.bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-radius: 0 0 0 6px; }
+.scan-corner.br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+.scan-line {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-sky);
+  box-shadow: 0 0 16px 4px color-mix(in srgb, var(--color-sky) 70%, transparent);
+  animation: scan 2.2s ease-in-out infinite;
+}
+.scan-caption {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  left: 0;
+  padding: 0 12px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--color-snow);
+}
+.scan-caption .hint {
+  color: var(--color-swan);
+}
+.blink-dots span { animation: blink 1.2s infinite; }
+.blink-dots span:nth-child(2) { animation-delay: 0.2s; }
+.blink-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes scan {
+  0% { top: 8%; }
+  50% { top: 90%; }
+  100% { top: 8%; }
+}
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-line { animation: none; top: 50%; }
+  .blink-dots span { animation: none; opacity: 1; }
+}
