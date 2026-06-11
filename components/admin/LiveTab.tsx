@@ -37,7 +37,7 @@ export default function LiveTab() {
               <tr key={f.id}>
                 <td>{new Date(f.createdAt).toLocaleTimeString()}</td>
                 <td><b>{f.nickname}</b></td>
-                <td>{f.taskTitle.slice(0, 30)}</td>
+                <td>{(f.taskTitle ?? "").slice(0, 30)}</td>
                 <td>{f.status === "correct" ? <span className="ok">✓ +฿{f.moneyAwarded}</span>
                   : f.status === "incorrect" ? <span className="bad">✗</span>
                   : <span className="pend">{f.status}</span>}</td>

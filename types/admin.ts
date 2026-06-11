@@ -30,15 +30,15 @@ export type Review = {
   aiComment: string | null;
   photoUrl: string;
   referenceImageUrl: string | null;
-  taskTitle: string;
+  taskTitle: string | null;
   moneyValue: number;
-  nickname: string;
+  nickname: string | null;
 };
 
 export type LiveFeedItem = {
   id: string;
-  nickname: string;
-  taskTitle: string;
+  nickname: string | null;
+  taskTitle: string | null;
   status: string;
   moneyAwarded: number;
   createdAt: string;

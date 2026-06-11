@@ -16,7 +16,7 @@ export default function ReviewsTab() {
     <div className="row">
       {reviews.map((r) => (
         <div className="panel" key={r.id} style={{ maxWidth: 360 }}>
-          <b>{r.nickname}</b> · {r.taskTitle.slice(0, 30)}
+          <b>{r.nickname}</b> · {(r.taskTitle ?? "").slice(0, 30)}
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
             {r.referenceImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
