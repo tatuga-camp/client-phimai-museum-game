@@ -81,6 +81,11 @@
   .btn-ink {
     @apply border-sky-dark bg-sky text-white;
   }
+  /* Neutral / secondary action (e.g. "Cancel") — white face, grey edge. */
+  .btn-ghost {
+    @apply border-swan-dark bg-snow text-eel;
+    @apply hover:brightness-[0.98];
+  }
 
   /* Selectable rows / tappable list items — lightly tactile. */
   .chip {

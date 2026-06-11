@@ -26,6 +26,7 @@ export default function TaskPage({
   const revealMut = useRevealHint();
   const [revealedHint, setRevealedHint] = useState<string | null>(null);
   const [hintError, setHintError] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [submitError, setSubmitError] = useState("");
 
@@ -37,12 +38,11 @@ export default function TaskPage({
   const prior = me?.mySubmissions.find((s) => s.taskId === taskId) ?? null;
   const shown = result ?? prior;
 
+  // Spending shared team money is destructive, so it's gated behind an in-app
+  // confirmation (a themed two-button step, not a native confirm() — those get
+  // swallowed in some kiosk/tablet WebViews this game runs on).
   async function revealHint() {
     if (!task) return;
-    if (
-      !confirm(`Spend ฿${task.hintCost} of your team's money to see the hint?`)
-    )
-      return;
     setHintError("");
     try {
       const r = await revealMut.mutateAsync(task.id);
@@ -54,6 +54,8 @@ export default function TaskPage({
       } else {
         setHintError("Connection problem — try again / ลองอีกครั้ง");
       }
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -141,13 +143,32 @@ export default function TaskPage({
         <h2>{task.titleEn}</h2>
         {task.hintRevealed || revealedHint ? (
           <p className="hint">{revealedHint ?? task.hintTh}</p>
-        ) : (
-          <div className="flex flex-col gap-4 mt-4">
+        ) : confirming ? (
+          <div className="flex flex-col gap-2 mt-4">
+            <p className="hint center">
+              Spend ฿{task.hintCost} of your team&apos;s money to reveal this
+              hint?
+              <br />
+              ใช้เงินทีม ฿{task.hintCost} เพื่อเปิดคำใบ้?
+            </p>
             <button
               className="btn"
               disabled={revealMut.isPending}
               onClick={revealHint}
             >
+              ✅ Yes, reveal — ฿{task.hintCost}
+            </button>
+            <button
+              className="btn btn-ghost"
+              disabled={revealMut.isPending}
+              onClick={() => setConfirming(false)}
+            >
+              Cancel / ยกเลิก
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 mt-4">
+            <button className="btn" onClick={() => setConfirming(true)}>
               💡 Reveal hint — ฿{task.hintCost}
             </button>
             <p className="hint center">
