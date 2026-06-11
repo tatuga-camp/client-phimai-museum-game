@@ -2,7 +2,11 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { newSubmissionId, ApiError } from "@/services/http";
-import { useMe, useSubmitAnswer, useRevealHint } from "@/react-query/player.queries";
+import {
+  useMe,
+  useSubmitAnswer,
+  useRevealHint,
+} from "@/react-query/player.queries";
 import type { SubmitResult } from "@/types";
 import McTask from "@/components/tasks/McTask";
 import ReorderTask from "@/components/tasks/ReorderTask";
@@ -35,7 +39,9 @@ export default function TaskPage({
 
   async function revealHint() {
     if (!task) return;
-    if (!confirm(`Spend ฿${task.hintCost} of your team's money to see the hint?`))
+    if (
+      !confirm(`Spend ฿${task.hintCost} of your team's money to see the hint?`)
+    )
       return;
     setHintError("");
     try {
@@ -56,7 +62,11 @@ export default function TaskPage({
     setSubmitError("");
     const clientSubmissionId = newSubmissionId();
     try {
-      const r = await submitMut.mutateAsync({ taskId, payload, clientSubmissionId });
+      const r = await submitMut.mutateAsync({
+        taskId,
+        payload,
+        clientSubmissionId,
+      });
       setResult(r);
     } catch (e) {
       const status = (e as ApiError).status;
@@ -90,9 +100,7 @@ export default function TaskPage({
               : "🤖"}
         </div>
         {shown.status === "correct" && (
-          <h1 className="ok">
-            Correct! +฿{shown.moneyAwarded} for your team!
-          </h1>
+          <h1 className="ok">Correct! +฿{shown.moneyAwarded} for your team!</h1>
         )}
         {shown.status === "incorrect" && (
           <h1 className="bad">
@@ -103,8 +111,7 @@ export default function TaskPage({
             </span>
           </h1>
         )}
-        {(shown.status === "pending_ai" ||
-          shown.status === "needs_manual") && (
+        {(shown.status === "pending_ai" || shown.status === "needs_manual") && (
           <h1 className="pend">
             AI judge is checking… check back soon!
             <br />
@@ -135,7 +142,7 @@ export default function TaskPage({
         {task.hintRevealed || revealedHint ? (
           <p className="hint">{revealedHint ?? task.hintTh}</p>
         ) : (
-          <>
+          <div className="flex flex-col gap-4 mt-4">
             <button
               className="btn"
               disabled={revealMut.isPending}
@@ -147,7 +154,7 @@ export default function TaskPage({
               เปิดคำใบ้ — ใช้เงินทีม ฿{task.hintCost}
             </p>
             {hintError && <p className="bad center">{hintError}</p>}
-          </>
+          </div>
         )}
       </div>
       {task.type === "mc" && <McTask {...common} />}
