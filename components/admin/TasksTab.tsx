@@ -9,6 +9,14 @@ const EMPTY: Omit<AdminTask, "id"> = {
   content: { type: "mc", options: [] }, answerKey: { type: "mc", correctOptionIds: [] },
 };
 
+/** reorder/swap items must each have a visible face: a label or an image. */
+function hasBlankItems(t: Partial<AdminTask>): boolean {
+  if (t.type !== "reorder" && t.type !== "swap") return false;
+  const items =
+    (t.content as { items?: { label: string; imageUrl?: string }[] })?.items ?? [];
+  return items.some((i) => !i.label.trim() && !i.imageUrl);
+}
+
 export default function TasksTab() {
   const { data: list = [] } = useTasks();
   const saveMut = useSaveTask();
@@ -16,6 +24,10 @@ export default function TasksTab() {
   const [msg, setMsg] = useState("");
 
   async function save() {
+    if (hasBlankItems(editing!)) {
+      setMsg("⚠ Each item needs a label or an image.");
+      return;
+    }
     try {
       await saveMut.mutateAsync(editing!);
       setEditing(null); setMsg("Saved ✓");
@@ -116,6 +128,8 @@ function McEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<Ad
 /* reorder & swap: items STORED in correct order; server shuffles per response */
 function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<AdminTask>) => void }) {
   const upload = useUploadImage();
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
   const isSwap = task.type === "swap";
   const content = task.content as { items: { id: string; label: string; imageUrl?: string }[]; slotLabels?: string[] };
   const items = content.items;
@@ -132,21 +146,55 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
     } as Partial<AdminTask>);
   };
 
+  async function pickImage(id: string, file: File) {
+    setFailedId(null);
+    setUploadingId(id);
+    try {
+      const url = await upload.mutateAsync(file);
+      commit(items.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)));
+    } catch {
+      setFailedId(id);
+    } finally {
+      setUploadingId(null);
+    }
+  }
+
   return (
     <div>
       <b>Items in CORRECT order (top = first/oldest){isSwap ? " — slot labels below" : ""}</b>
-      {items.map((it, i) => (
-        <div key={it.id} style={{ display: "flex", gap: 6, marginTop: 4 }}>
-          <input className="input" value={it.label}
-            onChange={(e) => { const n = [...items]; n[i] = { ...it, label: e.target.value }; commit(n); }} />
-          <input type="file" accept="image/*" onChange={async (e) => {
-            const f = e.target.files?.[0]; if (!f) return;
-            const url = await upload.mutateAsync(f);
-            const n = [...items]; n[i] = { ...it, imageUrl: url }; commit(n);
-          }} />
-          <button className="tab" onClick={() => commit(items.filter((x) => x.id !== it.id))}>✕</button>
-        </div>
-      ))}
+      <p className="hint">Each item needs a label, an image, or both.</p>
+      {items.map((it) => {
+        const blank = !it.label.trim() && !it.imageUrl;
+        return (
+          <div key={it.id} style={{ marginTop: 4 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {it.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={it.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, flex: "none" }} />
+              )}
+              <input className="input" placeholder="Label (optional with image)" value={it.label}
+                style={blank ? { borderColor: "var(--color-cardinal)" } : undefined}
+                onChange={(e) => commit(items.map((x) => (x.id === it.id ? { ...x, label: e.target.value } : x)))} />
+              <label className="tab" style={{ cursor: "pointer" }} title="Upload image">
+                {uploadingId === it.id ? "⏳" : "📷"}
+                <input type="file" accept="image/*" style={{ display: "none" }}
+                  disabled={uploadingId !== null}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) pickImage(it.id, f); }} />
+              </label>
+              {it.imageUrl && (
+                <button className="tab" title="Remove image"
+                  onClick={() => commit(items.map((x) => (x.id === it.id ? { id: x.id, label: x.label } : x)))}>
+                  🗑️
+                </button>
+              )}
+              <button className="tab" title="Delete item" onClick={() => commit(items.filter((x) => x.id !== it.id))}>✕</button>
+            </div>
+            {failedId === it.id && (
+              <p className="hint" style={{ color: "var(--color-cardinal)" }}>Upload failed — try again</p>
+            )}
+          </div>
+        );
+      })}
       <button className="tab" style={{ marginTop: 6 }}
         onClick={() => commit([...items, { id: crypto.randomUUID().slice(0, 8), label: "" }])}>+ item</button>
       {isSwap && (
@@ -162,6 +210,7 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
 /* circle: upload image, then drag a rectangle to mark the answer zone */
 function CircleEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<AdminTask>) => void }) {
   const upload = useUploadImage();
+  const [uploadErr, setUploadErr] = useState("");
   const content = task.content as { imageUrl: string };
   const key = task.answerKey as { zone: Zone };
   const imgRef = useRef<HTMLImageElement>(null);
@@ -175,9 +224,15 @@ function CircleEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partia
   return (
     <div>
       <input type="file" accept="image/*" onChange={async (e) => {
-        const f = e.target.files?.[0]; if (!f) return;
-        set({ content: { type: "circle", imageUrl: await upload.mutateAsync(f) } as AdminTask["content"] });
+        const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+        setUploadErr("");
+        try {
+          set({ content: { type: "circle", imageUrl: await upload.mutateAsync(f) } as AdminTask["content"] });
+        } catch {
+          setUploadErr("Upload failed — try again");
+        }
       }} />
+      {uploadErr && <p className="hint" style={{ color: "var(--color-cardinal)" }}>{uploadErr}</p>}
       {content.imageUrl && (
         <div style={{ position: "relative", marginTop: 8, userSelect: "none" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -209,14 +264,21 @@ function CircleEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partia
 /* photo: reference image + pose description for the AI */
 function PhotoEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<AdminTask>) => void }) {
   const upload = useUploadImage();
+  const [uploadErr, setUploadErr] = useState("");
   const content = task.content as { referenceImageUrl: string };
   const key = task.answerKey as { poseDescription: string };
   return (
     <div>
       <input type="file" accept="image/*" onChange={async (e) => {
-        const f = e.target.files?.[0]; if (!f) return;
-        set({ content: { type: "photo", referenceImageUrl: await upload.mutateAsync(f) } as AdminTask["content"] });
+        const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+        setUploadErr("");
+        try {
+          set({ content: { type: "photo", referenceImageUrl: await upload.mutateAsync(f) } as AdminTask["content"] });
+        } catch {
+          setUploadErr("Upload failed — try again");
+        }
       }} />
+      {uploadErr && <p className="hint" style={{ color: "var(--color-cardinal)" }}>{uploadErr}</p>}
       {content.referenceImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={content.referenceImageUrl} alt="" style={{ width: "100%", borderRadius: 8, marginTop: 8 }} />
