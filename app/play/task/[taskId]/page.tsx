@@ -14,6 +14,7 @@ import SwapTask from "@/components/tasks/SwapTask";
 import CircleTask from "@/components/tasks/CircleTask";
 import PhotoTask from "@/components/tasks/PhotoTask";
 import ConfirmModal from "@/components/ConfirmModal";
+import AiScanOverlay from "@/components/AiScanOverlay";
 
 export default function TaskPage({
   params,
@@ -29,6 +30,7 @@ export default function TaskPage({
   const [hintError, setHintError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
@@ -97,15 +99,15 @@ export default function TaskPage({
     );
 
   if (shown) {
+    const pending =
+      shown.status === "pending_ai" || shown.status === "needs_manual";
     return (
       <main className="page center">
-        <div style={{ fontSize: 56, marginTop: 40 }}>
-          {shown.status === "correct"
-            ? "🎉"
-            : shown.status === "incorrect"
-              ? "🙈"
-              : "🤖"}
-        </div>
+        {!pending && (
+          <div style={{ fontSize: 56, marginTop: 40 }}>
+            {shown.status === "correct" ? "🎉" : "🙈"}
+          </div>
+        )}
         {shown.status === "correct" && (
           <h1 className="ok">Correct! +฿{shown.moneyAwarded} for your team!</h1>
         )}
@@ -118,12 +120,35 @@ export default function TaskPage({
             </span>
           </h1>
         )}
-        {(shown.status === "pending_ai" || shown.status === "needs_manual") && (
-          <h1 className="pend">
-            AI judge is checking… check back soon!
-            <br />
-            <span className="hint">รอผลจากกรรมการ AI</span>
-          </h1>
+        {pending && (
+          <div style={{ position: "relative", width: "100%", marginTop: 24 }}>
+            {photoPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoPreview}
+                alt="your photo"
+                style={{ width: "100%", borderRadius: 12, display: "block" }}
+              />
+            ) : (
+              <div
+                style={{
+                  height: 240,
+                  borderRadius: 12,
+                  background: "var(--color-eel)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 72,
+                }}
+              >
+                🤖
+              </div>
+            )}
+            <AiScanOverlay
+              caption="AI judge is checking… check back soon!"
+              captionTh="รอผลจากกรรมการ AI"
+            />
+          </div>
         )}
         {shown.aiComment && <p className="card">💬 {shown.aiComment}</p>}
         <button
@@ -163,7 +188,15 @@ export default function TaskPage({
       {task.type === "reorder" && <ReorderTask {...common} />}
       {task.type === "swap" && <SwapTask {...common} />}
       {task.type === "circle" && <CircleTask {...common} />}
-      {task.type === "photo" && <PhotoTask task={task} onResult={setResult} />}
+      {task.type === "photo" && (
+        <PhotoTask
+          task={task}
+          onResult={(r, previewUrl) => {
+            setPhotoPreview(previewUrl ?? "");
+            setResult(r);
+          }}
+        />
+      )}
       {submitError && <p className="bad center">{submitError}</p>}
 
       <ConfirmModal
