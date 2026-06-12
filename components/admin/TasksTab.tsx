@@ -9,12 +9,31 @@ const EMPTY: Omit<AdminTask, "id"> = {
   content: { type: "mc", options: [] }, answerKey: { type: "mc", correctOptionIds: [] },
 };
 
-/** reorder/swap items must each have a visible face: a label or an image. */
+/** reorder/group items must each have a visible face: a label or an image. */
 function hasBlankItems(t: Partial<AdminTask>): boolean {
-  if (t.type !== "reorder" && t.type !== "swap") return false;
+  if (t.type !== "reorder" && t.type !== "group") return false;
   const items =
     (t.content as { items?: { label: string; imageUrl?: string }[] })?.items ?? [];
   return items.some((i) => !(i.label ?? "").trim() && !i.imageUrl);
+}
+
+/** group: ≥2 labelled groups and every item assigned to an existing group. */
+function groupProblem(t: Partial<AdminTask>): string | null {
+  if (t.type !== "group") return null;
+  const content = t.content as {
+    groups?: { id: string; label: string }[];
+    items?: { id: string }[];
+  };
+  const groups = content?.groups ?? [];
+  const items = content?.items ?? [];
+  const assignments =
+    (t.answerKey as { assignments?: Record<string, string> })?.assignments ?? {};
+  if (groups.length < 2) return "⚠ Need at least 2 groups.";
+  if (groups.some((g) => !g.label.trim())) return "⚠ Every group needs a label.";
+  const groupIds = new Set(groups.map((g) => g.id));
+  if (items.some((i) => !groupIds.has(assignments[i.id] ?? "")))
+    return "⚠ Every item needs a group.";
+  return null;
 }
 
 export default function TasksTab() {
@@ -26,6 +45,11 @@ export default function TasksTab() {
   async function save() {
     if (hasBlankItems(editing!)) {
       setMsg("⚠ Each item needs a label or an image.");
+      return;
+    }
+    const gp = groupProblem(editing!);
+    if (gp) {
+      setMsg(gp);
       return;
     }
     try {
@@ -73,7 +97,7 @@ function TaskEditor({ task, setTask, onSave }: {
       reorder: { content: { type: "reorder", items: [] }, answerKey: { type: "reorder", correctOrder: [] } },
       circle: { content: { type: "circle", imageUrl: "" }, answerKey: { type: "circle", zone: { x: 0.4, y: 0.4, w: 0.2, h: 0.2 } } },
       photo: { content: { type: "photo", referenceImageUrl: "" }, answerKey: { type: "photo", poseDescription: "" } },
-      swap: { content: { type: "swap", slotLabels: [], items: [] }, answerKey: { type: "swap", correctArrangement: [] } },
+      group: { content: { type: "group", groups: [], items: [] }, answerKey: { type: "group", assignments: {} } },
     };
     set({ type, content: fresh[type].content as AdminTask["content"], answerKey: fresh[type].answerKey as AdminTask["answerKey"] });
   };
@@ -86,13 +110,14 @@ function TaskEditor({ task, setTask, onSave }: {
           onChange={(e) => set({ roomNumber: Number(e.target.value) })} /></label>
         <label>Type <select className="input" value={task.type} disabled={!!task.id}
           onChange={(e) => setType(e.target.value as AdminTask["type"])}>
-          {["mc", "reorder", "circle", "photo", "swap"].map((t) => <option key={t}>{t}</option>)}
+          {["mc", "reorder", "circle", "photo", "group"].map((t) => <option key={t}>{t}</option>)}
         </select></label>
         <label>Title (English) <input className="input" value={task.titleEn ?? ""} onChange={(e) => set({ titleEn: e.target.value })} /></label>
         <label>Hint (Thai) <input className="input" value={task.hintTh ?? ""} onChange={(e) => set({ hintTh: e.target.value })} /></label>
         <label>Money ฿ <input className="input" type="number" value={task.moneyValue ?? 100} onChange={(e) => set({ moneyValue: Number(e.target.value) })} /></label>
         {task.type === "mc" && <McEditor task={task} set={set} />}
-        {(task.type === "reorder" || task.type === "swap") && <ListEditor task={task} set={set} />}
+        {task.type === "reorder" && <ListEditor task={task} set={set} />}
+        {task.type === "group" && <GroupEditor task={task} set={set} />}
         {task.type === "circle" && <CircleEditor task={task} set={set} />}
         {task.type === "photo" && <PhotoEditor task={task} set={set} />}
         <button className="btn" onClick={onSave}>Save task</button>
@@ -128,30 +153,23 @@ function McEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<Ad
   );
 }
 
-/* reorder & swap: items STORED in correct order; server shuffles per response */
+/* reorder: items STORED in correct order; server shuffles per response */
 function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<AdminTask>) => void }) {
   const upload = useUploadImage();
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [failedId, setFailedId] = useState<string | null>(null);
-  const isSwap = task.type === "swap";
-  const content = task.content as { items: { id: string; label: string; imageUrl?: string }[]; slotLabels?: string[] };
+  const content = task.content as { items: { id: string; label: string; imageUrl?: string }[] };
   const items = content.items;
   // pickImage commits after an await; read items via ref so mid-upload label
   // edits or deletions aren't clobbered by a stale render snapshot.
   const itemsRef = useRef(items);
   itemsRef.current = items; // eslint-disable-line react-hooks/refs
 
-  const commit = (newItems: typeof items, slotLabels?: string[]) => {
-    const correct = newItems.map((x) => x.id);
+  const commit = (newItems: typeof items) =>
     set({
-      content: isSwap
-        ? { type: "swap", slotLabels: slotLabels ?? content.slotLabels ?? [], items: newItems }
-        : { type: "reorder", items: newItems },
-      answerKey: isSwap
-        ? { type: "swap", correctArrangement: correct }
-        : { type: "reorder", correctOrder: correct },
+      content: { type: "reorder", items: newItems },
+      answerKey: { type: "reorder", correctOrder: newItems.map((x) => x.id) },
     } as Partial<AdminTask>);
-  };
 
   async function pickImage(id: string, file: File) {
     setFailedId(null);
@@ -170,17 +188,18 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
 
   return (
     <div>
-      <b>Items in CORRECT order (top = first/oldest){isSwap ? " — slot labels below" : ""}</b>
+      <b>Items in CORRECT order (top = first/oldest)</b>
       <p className="hint">Each item needs a label, an image, or both.</p>
       {items.map((it) => {
         const blank = !it.label.trim() && !it.imageUrl;
         return (
           <div key={it.id} style={{ marginTop: 4 }}>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {/* eslint-disable @next/next/no-img-element */}
               {it.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={it.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, flex: "none" }} />
               )}
+              {/* eslint-enable @next/next/no-img-element */}
               <input className="input" placeholder="Label (optional with image)" value={it.label}
                 style={blank ? { borderColor: "var(--color-cardinal)" } : undefined}
                 onChange={(e) => commit(items.map((x) => (x.id === it.id ? { ...x, label: e.target.value } : x)))} />
@@ -206,12 +225,127 @@ function ListEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<
       })}
       <button className="tab" style={{ marginTop: 6 }}
         onClick={() => commit([...items, { id: crypto.randomUUID().slice(0, 8), label: "" }])}>+ item</button>
-      {isSwap && (
-        <label>Slot labels (comma-separated)
-          <input className="input" value={(content.slotLabels ?? []).join(", ")}
-            onChange={(e) => commit(items, e.target.value.split(",").map((s) => s.trim()))} />
-        </label>
-      )}
+    </div>
+  );
+}
+
+/* group: named groups + items; each item's dropdown IS the answer key */
+function GroupEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial<AdminTask>) => void }) {
+  const upload = useUploadImage();
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
+  const content = task.content as {
+    groups: { id: string; label: string }[];
+    items: { id: string; label: string; imageUrl?: string }[];
+  };
+  const key = task.answerKey as { assignments: Record<string, string> };
+  // pickImage commits after an await; read items via ref so mid-upload label
+  // edits or deletions aren't clobbered by a stale render snapshot.
+  const itemsRef = useRef(content.items);
+  itemsRef.current = content.items; // eslint-disable-line react-hooks/refs
+
+  const commit = (
+    groups: typeof content.groups,
+    items: typeof content.items,
+    assignments: Record<string, string>,
+  ) =>
+    set({
+      content: { type: "group", groups, items },
+      answerKey: { type: "group", assignments },
+    } as Partial<AdminTask>);
+
+  async function pickImage(id: string, file: File) {
+    setFailedId(null);
+    setUploadingId(id);
+    try {
+      const url = await upload.mutateAsync(file);
+      const current = itemsRef.current;
+      if (!current.some((x) => x.id === id)) return; // item deleted mid-upload
+      commit(
+        content.groups,
+        current.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)),
+        key.assignments,
+      );
+    } catch {
+      setFailedId(id);
+    } finally {
+      setUploadingId(null);
+    }
+  }
+
+  return (
+    <div>
+      <b>Groups</b>
+      {content.groups.map((g) => (
+        <div key={g.id} style={{ display: "flex", gap: 6, marginTop: 4 }}>
+          <input className="input" placeholder="Group label" value={g.label}
+            onChange={(e) => commit(
+              content.groups.map((x) => (x.id === g.id ? { ...x, label: e.target.value } : x)),
+              content.items, key.assignments)} />
+          <button className="tab" title="Delete group" onClick={() => commit(
+            content.groups.filter((x) => x.id !== g.id),
+            content.items,
+            Object.fromEntries(Object.entries(key.assignments).filter(([, gid]) => gid !== g.id)))}>✕</button>
+        </div>
+      ))}
+      <button className="tab" style={{ marginTop: 6 }}
+        onClick={() => commit([...content.groups, { id: crypto.randomUUID().slice(0, 8), label: "" }], content.items, key.assignments)}>
+        + group
+      </button>
+
+      <b style={{ display: "block", marginTop: 12 }}>Items (assign each to its correct group)</b>
+      <p className="hint">Each item needs a label, an image, or both — and a group.</p>
+      {content.items.map((it) => {
+        const blank = !it.label.trim() && !it.imageUrl;
+        const unassigned = !key.assignments[it.id];
+        return (
+          <div key={it.id} style={{ marginTop: 4 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {/* eslint-disable @next/next/no-img-element */}
+              {it.imageUrl && (
+                <img src={it.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, flex: "none" }} />
+              )}
+              {/* eslint-enable @next/next/no-img-element */}
+              <input className="input" placeholder="Label (optional with image)" value={it.label}
+                style={blank ? { borderColor: "var(--color-cardinal)" } : undefined}
+                onChange={(e) => commit(content.groups,
+                  content.items.map((x) => (x.id === it.id ? { ...x, label: e.target.value } : x)),
+                  key.assignments)} />
+              <select className="input"
+                style={{ maxWidth: 130, ...(unassigned ? { borderColor: "var(--color-cardinal)" } : {}) }}
+                value={key.assignments[it.id] ?? ""}
+                onChange={(e) => commit(content.groups, content.items, { ...key.assignments, [it.id]: e.target.value })}>
+                <option value="" disabled>— group —</option>
+                {content.groups.map((g) => <option key={g.id} value={g.id}>{g.label || g.id}</option>)}
+              </select>
+              <label className="tab" style={{ cursor: "pointer" }} title="Upload image">
+                {uploadingId === it.id ? "⏳" : "📷"}
+                <input type="file" accept="image/*" style={{ display: "none" }}
+                  disabled={uploadingId !== null}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) pickImage(it.id, f); }} />
+              </label>
+              {it.imageUrl && (
+                <button className="tab" title="Remove image"
+                  onClick={() => commit(content.groups,
+                    content.items.map((x) => (x.id === it.id ? { id: x.id, label: x.label } : x)),
+                    key.assignments)}>
+                  🗑️
+                </button>
+              )}
+              <button className="tab" title="Delete item" onClick={() => {
+                const rest = { ...key.assignments };
+                delete rest[it.id];
+                commit(content.groups, content.items.filter((x) => x.id !== it.id), rest);
+              }}>✕</button>
+            </div>
+            {failedId === it.id && (
+              <p className="hint" style={{ color: "var(--color-cardinal)" }}>Upload failed — try again</p>
+            )}
+          </div>
+        );
+      })}
+      <button className="tab" style={{ marginTop: 6 }}
+        onClick={() => commit(content.groups, [...content.items, { id: crypto.randomUUID().slice(0, 8), label: "" }], key.assignments)}>+ item</button>
     </div>
   );
 }
