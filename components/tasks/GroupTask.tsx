@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DragDropProvider, useDroppable } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { CollisionPriority } from "@dnd-kit/abstract";
@@ -44,11 +44,11 @@ function GroupBox({
     <div
       ref={ref}
       style={{
-        border: "2px dashed var(--color-sandstone, #b9a98a)",
+        border: "2px dashed var(--color-swan)",
         borderRadius: 12,
         padding: 8,
         marginBottom: 10,
-        background: isDropTarget ? "rgba(120, 100, 60, 0.12)" : undefined,
+        background: isDropTarget ? "var(--color-sky-soft)" : undefined,
       }}
     >
       <p className="hint" style={{ margin: "0 0 6px" }}>
@@ -118,6 +118,9 @@ function GroupItem({
 export default function GroupTask({ task, submit }: Props) {
   const content = task.content as { groups: Group[]; items: DndItem[] };
   const [board, setBoard] = useState(() => deal(content.items, content.groups));
+  // onDragOver commits moves live; snapshot at drag start so a canceled drag
+  // (Escape, pointercancel) restores the board instead of stranding the item.
+  const preDrag = useRef(board);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const itemById = new Map(content.items.map((it) => [it.id, it]));
@@ -139,9 +142,15 @@ export default function GroupTask({ task, submit }: Props) {
       </p>
       <DragDropProvider
         sensors={dragSensors}
+        onDragStart={() => {
+          preDrag.current = board;
+        }}
         onDragOver={(event) => setBoard((cur) => move(cur, event))}
         onDragEnd={(event) => {
-          if (event.canceled) return;
+          if (event.canceled) {
+            setBoard(preDrag.current);
+            return;
+          }
           setBoard((cur) => move(cur, event));
         }}
       >
