@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
-import { DragDropProvider, KeyboardSensor, PointerSensor } from "@dnd-kit/react";
+import {
+  DragDropProvider,
+  KeyboardSensor,
+  PointerSensor,
+} from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
@@ -86,22 +90,6 @@ function SortableRow({
         />
       )}
       <span style={{ flex: 1 }}>{item.label}</span>
-      <button
-        type="button"
-        className="btn"
-        style={{ width: 44, padding: 6 }}
-        onClick={onUp}
-      >
-        ▲
-      </button>
-      <button
-        type="button"
-        className="btn"
-        style={{ width: 44, padding: 6 }}
-        onClick={onDown}
-      >
-        ▼
-      </button>
     </div>
   );
 }
