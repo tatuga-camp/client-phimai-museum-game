@@ -1,40 +1,12 @@
 "use client";
 import { useState } from "react";
-import {
-  DragDropProvider,
-  KeyboardSensor,
-  PointerSensor,
-} from "@dnd-kit/react";
+import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
 import type { Task } from "@/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
-
-// dnd-kit's default touch behaviour is a 250ms long-press before a drag starts
-// (to avoid mistaking a scroll swipe for a drag). Because every row has a
-// dedicated ☰ handle with `touch-action: none`, a swipe on the handle can never
-// be a page scroll — so we start the drag as soon as the finger moves ~5px,
-// matching the immediate feel of a mouse drag. Mouse-on-handle stays instant.
-const sensors = [
-  PointerSensor.configure({
-    activationConstraints(event, source) {
-      const { pointerType, target } = event;
-      if (
-        pointerType === "mouse" &&
-        target instanceof Element &&
-        (source.handle === target || source.handle?.contains(target))
-      ) {
-        return undefined;
-      }
-      return [new PointerActivationConstraints.Distance({ value: 5 })];
-    },
-  }),
-  KeyboardSensor,
-];
-
-type Item = { id: string; label: string; imageUrl?: string };
+import { dragSensors, type DndItem } from "@/components/tasks/dnd";
 type Props = {
   task: Task;
   submit: (p: Record<string, unknown>) => Promise<void>;
@@ -44,13 +16,9 @@ type Props = {
 function SortableRow({
   item,
   index,
-  onUp,
-  onDown,
 }: {
-  item: Item;
+  item: DndItem;
   index: number;
-  onUp: () => void;
-  onDown: () => void;
 }) {
   const { ref, handleRef, isDragging } = useSortable({ id: item.id, index });
 
@@ -76,7 +44,7 @@ function SortableRow({
         ☰
       </button>
       <b>{index + 1}.</b>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* eslint-disable @next/next/no-img-element */}
       {item.imageUrl && (
         <img
           src={item.imageUrl}
@@ -89,14 +57,15 @@ function SortableRow({
           }}
         />
       )}
+      {/* eslint-enable @next/next/no-img-element */}
       <span style={{ flex: 1 }}>{item.label}</span>
     </div>
   );
 }
 
 export default function ReorderTask({ task, submit }: Props) {
-  const initial = (task.content as { items: Item[] }).items;
-  const [items, setItems] = useState<Item[]>(initial);
+  const initial = (task.content as { items: DndItem[] }).items;
+  const [items, setItems] = useState<DndItem[]>(initial);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -107,22 +76,13 @@ export default function ReorderTask({ task, submit }: Props) {
     setConfirming(false);
   }
 
-  const moveBy = (i: number, dir: -1 | 1) =>
-    setItems((arr) => {
-      const j = i + dir;
-      if (j < 0 || j >= arr.length) return arr;
-      const n = [...arr];
-      [n[i], n[j]] = [n[j], n[i]];
-      return n;
-    });
-
   return (
     <div>
       <p className="hint">
-        Oldest first — drag ☰ or tap ▲▼ to move / เรียงจากเก่าไปใหม่
+        Oldest first — drag ☰ to move / เรียงจากเก่าไปใหม่
       </p>
       <DragDropProvider
-        sensors={sensors}
+        sensors={dragSensors}
         onDragEnd={(event) => setItems((cur) => move(cur, event))}
       >
         {items.map((it, i) => (
@@ -130,8 +90,6 @@ export default function ReorderTask({ task, submit }: Props) {
             key={it.id}
             item={it}
             index={i}
-            onUp={() => moveBy(i, -1)}
-            onDown={() => moveBy(i, 1)}
           />
         ))}
       </DragDropProvider>
