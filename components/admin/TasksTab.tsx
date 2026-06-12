@@ -239,10 +239,11 @@ function GroupEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial
     items: { id: string; label: string; imageUrl?: string }[];
   };
   const key = task.answerKey as { assignments: Record<string, string> };
-  // pickImage commits after an await; read items via ref so mid-upload label
-  // edits or deletions aren't clobbered by a stale render snapshot.
-  const itemsRef = useRef(content.items);
-  itemsRef.current = content.items; // eslint-disable-line react-hooks/refs
+  // pickImage commits after an await; read state via ref so mid-upload edits
+  // to items, groups, or assignments aren't clobbered by a stale render
+  // snapshot.
+  const snapRef = useRef({ groups: content.groups, items: content.items, assignments: key.assignments });
+  snapRef.current = { groups: content.groups, items: content.items, assignments: key.assignments }; // eslint-disable-line react-hooks/refs
 
   const commit = (
     groups: typeof content.groups,
@@ -259,12 +260,12 @@ function GroupEditor({ task, set }: { task: Partial<AdminTask>; set: (p: Partial
     setUploadingId(id);
     try {
       const url = await upload.mutateAsync(file);
-      const current = itemsRef.current;
-      if (!current.some((x) => x.id === id)) return; // item deleted mid-upload
+      const { groups, items, assignments } = snapRef.current;
+      if (!items.some((x) => x.id === id)) return; // item deleted mid-upload
       commit(
-        content.groups,
-        current.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)),
-        key.assignments,
+        groups,
+        items.map((x) => (x.id === id ? { ...x, imageUrl: url } : x)),
+        assignments,
       );
     } catch {
       setFailedId(id);
