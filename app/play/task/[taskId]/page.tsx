@@ -12,7 +12,7 @@ import {
 import type { SubmitResult } from "@/types";
 import McTask from "@/components/tasks/McTask";
 import ReorderTask from "@/components/tasks/ReorderTask";
-import SwapTask from "@/components/tasks/SwapTask";
+import GroupTask from "@/components/tasks/GroupTask";
 import CircleTask from "@/components/tasks/CircleTask";
 import PhotoTask from "@/components/tasks/PhotoTask";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -200,7 +200,7 @@ export default function TaskPage({
       </div>
       {task.type === "mc" && <McTask {...common} />}
       {task.type === "reorder" && <ReorderTask {...common} />}
-      {task.type === "swap" && <SwapTask {...common} />}
+      {task.type === "group" && <GroupTask {...common} />}
       {task.type === "circle" && <CircleTask {...common} />}
       {task.type === "photo" && (
         <PhotoTask

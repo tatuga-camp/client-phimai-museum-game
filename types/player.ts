@@ -1,4 +1,4 @@
-export type TaskType = "mc" | "reorder" | "circle" | "photo" | "swap";
+export type TaskType = "mc" | "reorder" | "circle" | "photo" | "group";
 
 export type Team = {
   id: string;
