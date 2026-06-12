@@ -56,7 +56,9 @@ export default function JoinPage({
             src="/full-logo.svg"
             alt="Phimai Treasure Hunt"
             width={100}
-            height={100}
+            height={178}
+            style={{ height: "auto" }}
+            priority
           />
         </div>
         <h1>Welcome, {joinedAs}!</h1>
@@ -87,7 +89,9 @@ export default function JoinPage({
           src="/full-logo.svg"
           alt="Phimai Treasure Hunt"
           width={100}
-          height={100}
+          height={178}
+          style={{ height: "auto" }}
+          priority
         />
       </div>
       <h1>Phimai Treasure Hunt</h1>
