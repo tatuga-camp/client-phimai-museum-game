@@ -4,7 +4,7 @@ export type Zone = { x: number; y: number; w: number; h: number };
 
 export type AdminTask = {
   id: string;
-  roomNumber: number;
+  roomNumber: string;
   type: TaskType;
   titleEn: string;
   hintTh: string;
@@ -53,5 +53,9 @@ export type Live = {
 export type TeamInput = { name: string; emoji: string; color: string };
 export type BulkPlayersInput = { teamId: string; count: number };
 export type AdjustInput = { teamId: string; amount: number; reason: string };
-export type OverrideInput = { submissionId: string; score: number; moneyValue: number };
+export type OverrideInput = {
+  submissionId: string;
+  score: number;
+  moneyValue: number;
+};
 export type LoginResponse = { token: string };

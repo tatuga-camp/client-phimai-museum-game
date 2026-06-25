@@ -6,6 +6,7 @@ import {
   adminLogin,
   getTasks,
   saveTask,
+  deleteTask,
   getTeams,
   createTeam,
   getPlayers,
@@ -34,12 +35,23 @@ export const useAdminLogin = () =>
   useMutation<LoginResponse, ApiError, string>({ mutationFn: adminLogin });
 
 export const useTasks = () =>
-  useQuery<AdminTask[], ApiError>({ queryKey: qk.admin.tasks, queryFn: getTasks });
+  useQuery<AdminTask[], ApiError>({
+    queryKey: qk.admin.tasks,
+    queryFn: getTasks,
+  });
 
 export const useSaveTask = () => {
   const qc = useQueryClient();
   return useMutation<unknown, ApiError, Partial<AdminTask>>({
     mutationFn: saveTask,
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.admin.tasks }),
+  });
+};
+
+export const useDeleteTask = () => {
+  const qc = useQueryClient();
+  return useMutation<unknown, ApiError, string>({
+    mutationFn: deleteTask,
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.admin.tasks }),
   });
 };
@@ -56,7 +68,10 @@ export const useCreateTeam = () => {
 };
 
 export const usePlayers = () =>
-  useQuery<PlayerRow[], ApiError>({ queryKey: qk.admin.players, queryFn: getPlayers });
+  useQuery<PlayerRow[], ApiError>({
+    queryKey: qk.admin.players,
+    queryFn: getPlayers,
+  });
 
 export const useBulkPlayers = () => {
   const qc = useQueryClient();

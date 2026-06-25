@@ -13,7 +13,10 @@ import type {
 } from "@/types";
 
 export const adminLogin = (password: string) =>
-  adminApi<LoginResponse>("/login", { method: "POST", body: JSON.stringify({ password }) });
+  adminApi<LoginResponse>("/login", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
 
 // The API wraps its list responses ({ tasks } / { teams } / { players } / { reviews });
 // unwrap to the bare arrays the UI consumes.
@@ -21,8 +24,17 @@ export const getTasks = () =>
   adminApi<{ tasks: AdminTask[] }>("/tasks").then((r) => r.tasks);
 export const saveTask = (task: Partial<AdminTask>) =>
   task.id
-    ? adminApi<unknown>(`/tasks/${task.id}`, { method: "PUT", body: JSON.stringify(task) })
-    : adminApi<unknown>("/tasks", { method: "POST", body: JSON.stringify(task) });
+    ? adminApi<unknown>(`/tasks/${task.id}`, {
+        method: "PUT",
+        body: JSON.stringify(task),
+      })
+    : adminApi<unknown>("/tasks", {
+        method: "POST",
+        body: JSON.stringify(task),
+      });
+
+export const deleteTask = (id: string) =>
+  adminApi<unknown>(`/tasks/${id}`, { method: "DELETE" });
 
 export const getTeams = () =>
   adminApi<{ teams: Team[] }>("/teams").then((r) => r.teams);
@@ -32,7 +44,10 @@ export const createTeam = (input: TeamInput) =>
 export const getPlayers = () =>
   adminApi<{ players: PlayerRow[] }>("/players").then((r) => r.players);
 export const bulkPlayers = (input: BulkPlayersInput) =>
-  adminApi<unknown>("/players/bulk", { method: "POST", body: JSON.stringify(input) });
+  adminApi<unknown>("/players/bulk", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 export const resetPlayer = (id: string) =>
   adminApi<unknown>(`/players/${id}/reset`, { method: "POST" });
 

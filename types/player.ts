@@ -10,11 +10,11 @@ export type Team = {
 
 export type Task = {
   id: string;
-  roomNumber: number;
+  roomNumber: string;
   type: TaskType;
   titleEn: string;
-  hintTh: string | null;   // null until the team reveals the hint
-  hintCost: number;        // money it costs to reveal
+  hintTh: string | null; // null until the team reveals the hint
+  hintCost: number; // money it costs to reveal
   hintRevealed: boolean;
   moneyValue: number;
   content: Record<string, unknown>;
