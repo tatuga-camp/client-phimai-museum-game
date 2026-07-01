@@ -587,11 +587,12 @@ function GroupEditor({
     items: content.items,
     assignments: key.assignments,
   });
+  // eslint-disable-next-line react-hooks/refs
   snapRef.current = {
     groups: content.groups,
     items: content.items,
     assignments: key.assignments,
-  }; // eslint-disable-line react-hooks/refs
+  };
 
   const commit = (
     groups: typeof content.groups,
