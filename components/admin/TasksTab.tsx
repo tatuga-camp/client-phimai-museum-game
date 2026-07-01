@@ -261,7 +261,7 @@ function TaskEditor({
   );
 }
 
-/* mc: editable option rows + checkbox marks correct ones */
+/* mc: optional question image + editable option rows; checkbox marks correct ones */
 function McEditor({
   task,
   set,
@@ -269,19 +269,103 @@ function McEditor({
   task: Partial<AdminTask>;
   set: (p: Partial<AdminTask>) => void;
 }) {
+  const upload = useUploadImage();
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
   const content = task.content as {
     type: "mc";
+    imageUrl?: string;
     options: { id: string; text: string }[];
   };
   const key = task.answerKey as { type: "mc"; correctOptionIds: string[] };
+  // pickImage commits after an await; read content via ref so option/label
+  // edits made mid-upload aren't clobbered by a stale render snapshot.
+  const contentRef = useRef(content);
+  contentRef.current = content; // eslint-disable-line react-hooks/refs
+
+  // Option edits are synchronous — preserve the current imageUrl inline.
   const update = (options: typeof content.options, correct: string[]) =>
     set({
-      content: { type: "mc", options },
+      content: {
+        type: "mc",
+        ...(content.imageUrl ? { imageUrl: content.imageUrl } : {}),
+        options,
+      },
       answerKey: { type: "mc", correctOptionIds: correct },
     });
+
+  async function pickImage(file: File) {
+    setUploadErr("");
+    setUploading(true);
+    try {
+      const url = await upload.mutateAsync(file);
+      // Patch only content (preserving the latest options); leaving answerKey
+      // out of the patch keeps whatever correctOptionIds are current.
+      set({
+        content: { type: "mc", imageUrl: url, options: contentRef.current.options },
+      });
+    } catch {
+      setUploadErr("Upload failed — try again");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div>
-      <b>Options (check the correct ones)</b>
+      <b>Question image (optional)</b>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
+        {content.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={content.imageUrl}
+            alt=""
+            style={{
+              width: 40,
+              height: 40,
+              objectFit: "cover",
+              borderRadius: 8,
+              flex: "none",
+            }}
+          />
+        )}
+        <label className="tab" style={{ cursor: "pointer" }} title="Upload image">
+          {uploading ? "⏳" : "📷"}
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) pickImage(f);
+            }}
+          />
+        </label>
+        {content.imageUrl && (
+          <button
+            className="tab"
+            title="Remove image"
+            onClick={() =>
+              set({
+                content: { type: "mc", options: contentRef.current.options },
+              })
+            }
+          >
+            🗑️
+          </button>
+        )}
+      </div>
+      {uploadErr && (
+        <p className="hint" style={{ color: "var(--color-cardinal)" }}>
+          {uploadErr}
+        </p>
+      )}
+
+      <b style={{ display: "block", marginTop: 12 }}>
+        Options (check the correct ones)
+      </b>
       {content.options.map((o, i) => (
         <div key={o.id} style={{ display: "flex", gap: 6, marginTop: 4 }}>
           <input
