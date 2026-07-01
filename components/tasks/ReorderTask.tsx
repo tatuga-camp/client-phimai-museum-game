@@ -7,6 +7,7 @@ import type { Task } from "@/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
 import { dragSensors, type DndItem } from "@/components/tasks/dnd";
+import ZoomableImage from "@/components/ZoomableImage";
 type Props = {
   task: Task;
   submit: (p: Record<string, unknown>) => Promise<void>;
@@ -44,20 +45,12 @@ function SortableRow({
         ☰
       </button>
       <b>{index + 1}.</b>
-      {/* eslint-disable @next/next/no-img-element */}
       {item.imageUrl && (
-        <img
+        <ZoomableImage
           src={item.imageUrl}
-          alt=""
-          style={{
-            width: 80,
-            height: 80,
-            objectFit: "cover",
-            borderRadius: 8,
-          }}
+          style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }}
         />
       )}
-      {/* eslint-enable @next/next/no-img-element */}
       <span style={{ flex: 1 }}>{item.label}</span>
     </div>
   );

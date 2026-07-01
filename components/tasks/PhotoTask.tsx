@@ -6,6 +6,7 @@ import { useSubmitPhoto } from "@/react-query/player.queries";
 import type { Task, SubmitResult } from "@/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import AiScanOverlay from "@/components/AiScanOverlay";
+import ZoomableImage from "@/components/ZoomableImage";
 
 /** Server-side upload limit (photo.service.ts) — compression fallback bound. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -89,8 +90,7 @@ export default function PhotoTask({ task, onResult }: Props) {
   return (
     <div>
       <p className="hint">Find this spot and copy the pose! / ทำท่าตามภาพ</p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <ZoomableImage
         src={ref}
         alt="reference pose"
         style={{
