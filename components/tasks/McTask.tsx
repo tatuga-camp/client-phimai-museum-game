@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Task } from "@/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { SUBMIT_CONFIRM } from "@/components/tasks/submitConfirm";
+import ZoomableImage from "@/components/ZoomableImage";
 
 type Props = {
   task: Task;
@@ -11,8 +12,11 @@ type Props = {
 };
 
 export default function McTask({ task, submit }: Props) {
-  const options = (task.content as { options: { id: string; text: string }[] })
-    .options;
+  const content = task.content as {
+    options: { id: string; text: string }[];
+    imageUrl?: string;
+  };
+  const options = content.options;
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -35,6 +39,12 @@ export default function McTask({ task, submit }: Props) {
   return (
     <div>
       <p className="hint">Choose ALL correct answers / เลือกทุกข้อที่ถูก</p>
+      {content.imageUrl && (
+        <ZoomableImage
+          src={content.imageUrl}
+          style={{ width: "100%", borderRadius: 12, marginBottom: 8 }}
+        />
+      )}
       {options.map((o) => (
         <button
           key={o.id}
