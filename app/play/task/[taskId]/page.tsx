@@ -17,6 +17,7 @@ import CircleTask from "@/components/tasks/CircleTask";
 import PhotoTask from "@/components/tasks/PhotoTask";
 import ConfirmModal from "@/components/ConfirmModal";
 import AiScanOverlay from "@/components/AiScanOverlay";
+import ZoomableImage from "@/components/ZoomableImage";
 
 export default function TaskPage({
   params,
@@ -30,6 +31,7 @@ export default function TaskPage({
   const submitMut = useSubmitAnswer();
   const revealMut = useRevealHint();
   const [revealedHint, setRevealedHint] = useState<string | null>(null);
+  const [revealedHintImage, setRevealedHintImage] = useState<string | null>(null);
   const [hintError, setHintError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -64,6 +66,7 @@ export default function TaskPage({
     try {
       const r = await revealMut.mutateAsync(task.id);
       setRevealedHint(r.hintTh);
+      setRevealedHintImage(r.hintImageUrl);
       setConfirming(false); // success closes the popup; errors keep it open
     } catch (e) {
       const status = (e as ApiError).status;
@@ -186,7 +189,21 @@ export default function TaskPage({
       <div className="card" style={{ marginTop: 12 }}>
         <h2>{task.titleEn}</h2>
         {task.hintRevealed || revealedHint ? (
-          <p className="hint">{revealedHint ?? task.hintTh}</p>
+          <>
+            <p className="hint">{revealedHint ?? task.hintTh}</p>
+            {(revealedHintImage ?? task.hintImageUrl) && (
+              <ZoomableImage
+                src={(revealedHintImage ?? task.hintImageUrl)!}
+                alt="hint"
+                style={{
+                  width: "100%",
+                  borderRadius: 8,
+                  marginTop: 8,
+                  display: "block",
+                }}
+              />
+            )}
+          </>
         ) : (
           <div className="flex flex-col gap-4 mt-4">
             <button className="btn" onClick={openConfirm}>
