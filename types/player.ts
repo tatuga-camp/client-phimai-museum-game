@@ -14,6 +14,7 @@ export type Task = {
   type: TaskType;
   titleEn: string;
   hintTh: string | null; // null until the team reveals the hint
+  hintImageUrl: string | null; // gated like hintTh; also null when the task has no image
   hintCost: number; // money it costs to reveal
   hintRevealed: boolean;
   moneyValue: number;

@@ -8,6 +8,7 @@ export type AdminTask = {
   type: TaskType;
   titleEn: string;
   hintTh: string;
+  hintImageUrl?: string | null;
   moneyValue: number;
   isActive: boolean;
   content: Record<string, unknown>;

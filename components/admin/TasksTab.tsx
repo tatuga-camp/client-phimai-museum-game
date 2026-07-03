@@ -14,6 +14,7 @@ const EMPTY: Omit<AdminTask, "id"> = {
   type: "mc",
   titleEn: "",
   hintTh: "",
+  hintImageUrl: null,
   moneyValue: 100,
   isActive: true,
   content: { type: "mc", options: [] },
@@ -225,6 +226,7 @@ function TaskEditor({
             onChange={(e) => set({ hintTh: e.target.value })}
           />
         </label>
+        <HintImagePicker task={task} set={set} />
         <label>
           Money ฿{" "}
           <input
@@ -986,6 +988,83 @@ function PhotoEditor({
           }
         />
       </label>
+    </div>
+  );
+}
+
+/* optional hint image: students see it only AFTER paying to reveal the hint */
+function HintImagePicker({
+  task,
+  set,
+}: {
+  task: Partial<AdminTask>;
+  set: (p: Partial<AdminTask>) => void;
+}) {
+  const upload = useUploadImage();
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+
+  async function pickImage(file: File) {
+    setUploadErr("");
+    setUploading(true);
+    try {
+      set({ hintImageUrl: await upload.mutateAsync(file) });
+    } catch {
+      setUploadErr("Upload failed — try again");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <b>Hint image (optional)</b>
+      <div
+        style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}
+      >
+        {task.hintImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={task.hintImageUrl}
+            alt=""
+            style={{
+              width: 40,
+              height: 40,
+              objectFit: "cover",
+              borderRadius: 8,
+              flex: "none",
+            }}
+          />
+        )}
+        <label className="tab" style={{ cursor: "pointer" }} title="Upload hint image">
+          {uploading ? "⏳" : "📷"}
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) pickImage(f);
+            }}
+          />
+        </label>
+        {task.hintImageUrl && (
+          <button
+            className="tab"
+            title="Remove hint image"
+            onClick={() => set({ hintImageUrl: null })}
+          >
+            🗑️
+          </button>
+        )}
+      </div>
+      {uploadErr && (
+        <p className="hint" style={{ color: "var(--color-cardinal)" }}>
+          {uploadErr}
+        </p>
+      )}
     </div>
   );
 }
